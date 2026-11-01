@@ -1,5 +1,6 @@
 
 import os
+import logging
 from typing import List, Dict, Any
 
 from fastapi import FastAPI, HTTPException, Query
@@ -20,10 +21,14 @@ from models import (
     LastMinutePlan,
     Guest,
     Expense,
+    ExpenseUpdate,
+    GuestUpdate,
 )
 
 import database as db
 import ai_engine as ai
+
+logger = logging.getLogger(__name__)
 
 
 # --------------------------------------------------
@@ -44,12 +49,22 @@ app = FastAPI(
 # CORS CONFIGURATION
 # --------------------------------------------------
 
+# Allow only trusted frontend origins.
+allowed_origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ORIGINS",
+        "https://celebr-ai-amber.vercel.app,http://localhost:5173"
+    ).split(",")
+    if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=allowed_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 
@@ -98,10 +113,11 @@ def generate_event(req: EventGenerateRequest):
 
         return saved_plan
 
-    except Exception as e:
+    except Exception:
+        logger.exception("Event generation failed")
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to generate event: {str(e)}",
+            detail="Event generation is temporarily unavailable. Please try again.",
         )
 
 
@@ -166,10 +182,11 @@ def chat_ai(req: EventChatRequest):
     try:
         return ai.handle_ai_chat(req)
 
-    except Exception as e:
+    except Exception:
+        logger.exception("AI chat failed")
         raise HTTPException(
             status_code=500,
-            detail=f"AI chat failed: {str(e)}",
+            detail="AI chat is temporarily unavailable. Please try again.",
         )
 
 
@@ -181,10 +198,11 @@ def optimize_budget_endpoint(req: BudgetOptimizationRequest):
     try:
         return ai.optimize_budget(req)
 
-    except Exception as e:
+    except Exception:
+        logger.exception("Budget optimization failed")
         raise HTTPException(
             status_code=500,
-            detail=f"Budget optimization failed: {str(e)}",
+            detail="Budget optimization is temporarily unavailable. Please try again.",
         )
 
 
@@ -196,10 +214,11 @@ def last_minute_plan_endpoint(req: LastMinuteRequest):
     try:
         return ai.generate_last_minute_rescue(req)
 
-    except Exception as e:
+    except Exception:
+        logger.exception("Last-minute planning failed")
         raise HTTPException(
             status_code=500,
-            detail=f"Last-minute planning failed: {str(e)}",
+            detail="Last-minute planning is temporarily unavailable. Please try again.",
         )
 
 
@@ -220,9 +239,12 @@ def add_new_expense(expense: Expense):
 @app.put("/api/expenses/{expense_id}")
 def update_existing_expense(
     expense_id: str,
-    updates: Dict[str, Any],
+    updates: ExpenseUpdate,
 ):
-    result = db.update_expense(expense_id, updates)
+    result = db.update_expense(
+        expense_id,
+        updates.model_dump(exclude_unset=True)
+    )
 
     if not result:
         raise HTTPException(
@@ -263,9 +285,12 @@ def add_new_guest(guest: Guest):
 @app.put("/api/guests/{guest_id}")
 def update_existing_guest(
     guest_id: str,
-    updates: Dict[str, Any],
+    updates: GuestUpdate,
 ):
-    result = db.update_guest(guest_id, updates)
+    result = db.update_guest(
+        guest_id,
+        updates.model_dump(exclude_unset=True)
+    )
 
     if not result:
         raise HTTPException(

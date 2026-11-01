@@ -263,6 +263,7 @@ export const BudgetPlannerPage: React.FC = () => {
         <form onSubmit={handleAIOptimize} className="mt-4 flex flex-col sm:flex-row gap-3">
           <input
             type="text"
+            aria-label="Budget optimization instruction"
             value={instruction}
             onChange={(e) => setInstruction(e.target.value)}
             placeholder="e.g. Reduce decorations by ₹1,000 and increase food budget by ₹1,000"
@@ -340,6 +341,7 @@ export const BudgetPlannerPage: React.FC = () => {
           <div className="flex items-center space-x-2 text-xs">
             <Filter className="w-3.5 h-3.5 text-gray-400" />
             <select
+              aria-label="Filter expenses by category"
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="p-1.5 rounded-lg border border-brand-lavender dark:border-white/10 bg-brand-warm-white dark:bg-[#141622] text-xs cursor-pointer"
