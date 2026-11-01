@@ -242,3 +242,49 @@ def test_updates_for_missing_records_return_none():
         {"email": None}
     ) is None
 
+
+
+def test_save_event_rolls_back_when_expense_sync_fails():
+    event = sample_event()
+
+    with db.get_connection() as conn:
+        conn.execute("""
+            CREATE TRIGGER fail_expense_insert
+            BEFORE INSERT ON expenses
+            BEGIN
+                SELECT RAISE(ABORT, 'Simulated expense failure');
+            END;
+        """)
+
+    with pytest.raises(Exception, match="Simulated expense failure"):
+        db.save_event(event)
+
+    assert db.get_event("event-test-001") is None
+    assert db.list_expenses("event-test-001") == []
+
+
+def test_save_event_rolls_back_when_task_creation_fails():
+    event = sample_event()
+
+    with db.get_connection() as conn:
+        conn.execute("""
+            CREATE TRIGGER fail_task_insert
+            BEFORE INSERT ON tasks
+            BEGIN
+                SELECT RAISE(ABORT, 'Simulated task failure');
+            END;
+        """)
+
+    with pytest.raises(Exception, match="Simulated task failure"):
+        db.save_event(event)
+
+    assert db.get_event("event-test-001") is None
+    assert db.list_expenses("event-test-001") == []
+
+    with db.get_connection() as conn:
+        task_count = conn.execute(
+            "SELECT COUNT(*) FROM tasks WHERE event_id = ?",
+            ("event-test-001",)
+        ).fetchone()[0]
+
+    assert task_count == 0

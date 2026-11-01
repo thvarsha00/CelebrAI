@@ -12,6 +12,7 @@ load_dotenv()
 
 from models import (
     EventGenerateRequest,
+    EventCreateRequest,
     EventPlan,
     BudgetOptimizationRequest,
     BudgetOptimizationResponse,
@@ -20,7 +21,7 @@ from models import (
     LastMinuteRequest,
     LastMinutePlan,
     Guest,
-    Expense,
+    ExpenseCreate,
     ExpenseUpdate,
     GuestUpdate,
 )
@@ -49,7 +50,6 @@ app = FastAPI(
 # CORS CONFIGURATION
 # --------------------------------------------------
 
-# Allow only trusted frontend origins.
 allowed_origins = [
     origin.strip()
     for origin in os.getenv(
@@ -102,14 +102,18 @@ def health_check():
 @app.post("/api/events/generate", response_model=EventPlan)
 def generate_event(req: EventGenerateRequest):
     """
-    Generate a comprehensive 14-section event plan
-    using the configured AI provider.
+    Generate and persist a comprehensive event plan.
     """
     try:
         plan = ai.generate_event_plan(req)
 
-        # Automatically persist generated event
-        saved_plan = db.save_event(plan.model_dump())
+        validated_plan = EventPlan.model_validate(
+            plan.model_dump()
+        )
+
+        saved_plan = db.save_event(
+            validated_plan.model_dump(exclude_none=True)
+        )
 
         return saved_plan
 
@@ -117,7 +121,10 @@ def generate_event(req: EventGenerateRequest):
         logger.exception("Event generation failed")
         raise HTTPException(
             status_code=500,
-            detail="Event generation is temporarily unavailable. Please try again.",
+            detail=(
+                "Event generation is temporarily unavailable. "
+                "Please try again."
+            ),
         )
 
 
@@ -126,12 +133,29 @@ def get_all_events():
     return db.list_events()
 
 
-@app.post("/api/events")
-def create_event(event: Dict[str, Any]):
-    return db.save_event(event)
+@app.post("/api/events", response_model=Dict[str, Any])
+def create_event(event: EventCreateRequest):
+    """
+    Create a basic event without requiring a complete AI-generated plan.
+
+    Additional generated-plan fields are preserved when supplied.
+    """
+    try:
+        validated_event = event.model_dump(exclude_none=True)
+
+        saved_event = db.save_event(validated_event)
+
+        return saved_event
+
+    except Exception:
+        logger.exception("Event creation failed")
+        raise HTTPException(
+            status_code=500,
+            detail="Event creation failed. Please try again.",
+        )
 
 
-@app.get("/api/events/{event_id}")
+@app.get("/api/events/{event_id}", response_model=Dict[str, Any])
 def get_event_by_id(event_id: str):
     plan = db.get_event(event_id)
 
@@ -144,8 +168,18 @@ def get_event_by_id(event_id: str):
     return plan
 
 
-@app.put("/api/events/{event_id}")
-def update_event(event_id: str, updates: Dict[str, Any]):
+@app.put("/api/events/{event_id}", response_model=Dict[str, Any])
+def update_event(
+    event_id: str,
+    updates: Dict[str, Any],
+):
+    """
+    Safely update an existing event.
+
+    Partial updates are supported. Existing generated-plan fields
+    are preserved, while unknown fields and ID changes are rejected.
+    """
+
     existing = db.get_event(event_id)
 
     if not existing:
@@ -154,10 +188,129 @@ def update_event(event_id: str, updates: Dict[str, Any]):
             detail="Event not found",
         )
 
-    existing.update(updates)
-    existing["id"] = event_id
+    if not updates:
+        raise HTTPException(
+            status_code=422,
+            detail="At least one update field is required",
+        )
 
-    return db.save_event(existing)
+    if "id" in updates:
+        raise HTTPException(
+            status_code=422,
+            detail="Event ID cannot be changed",
+        )
+
+    allowed_fields = set(EventPlan.model_fields.keys()) | {
+        "title",
+        "event_type",
+        "guest_count",
+        "total_budget",
+        "location",
+        "event_date",
+    }
+
+    unexpected_fields = set(updates.keys()) - allowed_fields
+
+    if unexpected_fields:
+        raise HTTPException(
+            status_code=422,
+            detail="Unexpected event fields",
+        )
+
+    merged_event = {
+        **existing,
+        **updates,
+        "id": event_id,
+    }
+
+    # Validate known event fields individually.
+    # This allows minimal events while retaining validation
+    # for generated-plan fields whenever they are supplied.
+    try:
+        required_fields = {
+            "title",
+            "event_type",
+            "guest_count",
+            "total_budget",
+            "location",
+            "event_date",
+        }
+
+        if not required_fields.issubset(merged_event.keys()):
+            raise ValueError("Missing required event fields")
+
+        basic_event = EventCreateRequest.model_validate(
+            {
+                key: merged_event[key]
+                for key in required_fields
+            }
+        )
+
+        validated_data = basic_event.model_dump()
+
+        optional_models = {
+            "theme": None,
+            "food_and_beverage": None,
+            "budget_breakdown": None,
+            "shopping_checklist": None,
+            "event_schedule": None,
+            "invitation": None,
+        }
+
+        from models import (
+            ThemePalette,
+            MenuItem,
+            BudgetItem,
+            ShoppingItem,
+            TimelineActivity,
+            InvitationTemplate,
+        )
+
+        optional_models.update({
+            "theme": ThemePalette,
+            "food_and_beverage": List[MenuItem],
+            "budget_breakdown": List[BudgetItem],
+            "shopping_checklist": List[ShoppingItem],
+            "event_schedule": List[TimelineActivity],
+            "invitation": InvitationTemplate,
+        })
+
+        from pydantic import TypeAdapter
+
+        for field, value in merged_event.items():
+            if field in validated_data or field == "id":
+                continue
+
+            if field in optional_models and value is not None:
+                adapter = TypeAdapter(optional_models[field])
+                validated_data[field] = adapter.validate_python(value)
+                if isinstance(validated_data[field], list):
+                    validated_data[field] = [
+                        item.model_dump() if hasattr(item, "model_dump") else item
+                        for item in validated_data[field]
+                    ]
+                elif hasattr(validated_data[field], "model_dump"):
+                    validated_data[field] = validated_data[field].model_dump()
+            else:
+                validated_data[field] = value
+
+        validated_data["id"] = event_id
+
+    except Exception:
+        raise HTTPException(
+            status_code=422,
+            detail="Invalid event data",
+        )
+
+    try:
+        return db.save_event(validated_data)
+
+    except Exception:
+        logger.exception("Event update failed")
+        raise HTTPException(
+            status_code=500,
+            detail="Event update failed. Please try again.",
+        )
 
 
 @app.delete("/api/events/{event_id}")
@@ -202,7 +355,10 @@ def optimize_budget_endpoint(req: BudgetOptimizationRequest):
         logger.exception("Budget optimization failed")
         raise HTTPException(
             status_code=500,
-            detail="Budget optimization is temporarily unavailable. Please try again.",
+            detail=(
+                "Budget optimization is temporarily unavailable. "
+                "Please try again."
+            ),
         )
 
 
@@ -218,7 +374,10 @@ def last_minute_plan_endpoint(req: LastMinuteRequest):
         logger.exception("Last-minute planning failed")
         raise HTTPException(
             status_code=500,
-            detail="Last-minute planning is temporarily unavailable. Please try again.",
+            detail=(
+                "Last-minute planning is temporarily unavailable. "
+                "Please try again."
+            ),
         )
 
 
@@ -227,12 +386,12 @@ def last_minute_plan_endpoint(req: LastMinuteRequest):
 # --------------------------------------------------
 
 @app.get("/api/expenses", response_model=List[Dict[str, Any]])
-def get_expenses(event_id: str = Query(...)):
+def get_expenses(event_id: str = Query(..., min_length=1, max_length=100)):
     return db.list_expenses(event_id)
 
 
 @app.post("/api/expenses", response_model=Dict[str, Any])
-def add_new_expense(expense: Expense):
+def add_new_expense(expense: ExpenseCreate):
     return db.add_expense(expense.model_dump())
 
 
@@ -241,10 +400,15 @@ def update_existing_expense(
     expense_id: str,
     updates: ExpenseUpdate,
 ):
-    result = db.update_expense(
-        expense_id,
-        updates.model_dump(exclude_unset=True)
-    )
+    update_data = updates.model_dump(exclude_unset=True)
+
+    if not update_data:
+        raise HTTPException(
+            status_code=422,
+            detail="At least one update field is required",
+        )
+
+    result = db.update_expense(expense_id, update_data)
 
     if not result:
         raise HTTPException(
@@ -273,7 +437,7 @@ def remove_expense(expense_id: str):
 # --------------------------------------------------
 
 @app.get("/api/guests", response_model=List[Dict[str, Any]])
-def get_guests(event_id: str = Query(...)):
+def get_guests(event_id: str = Query(..., min_length=1, max_length=100)):
     return db.list_guests(event_id)
 
 
@@ -287,10 +451,15 @@ def update_existing_guest(
     guest_id: str,
     updates: GuestUpdate,
 ):
-    result = db.update_guest(
-        guest_id,
-        updates.model_dump(exclude_unset=True)
-    )
+    update_data = updates.model_dump(exclude_unset=True)
+
+    if not update_data:
+        raise HTTPException(
+            status_code=422,
+            detail="At least one update field is required",
+        )
+
+    result = db.update_guest(guest_id, update_data)
 
     if not result:
         raise HTTPException(
