@@ -4,11 +4,12 @@ import os
 import uuid
 from typing import List, Optional, Dict, Any
 
-DB_FILE = os.path.join(os.path.dirname(__file__), "celebrai.db")
+DB_FILE = os.getenv("CELEBRAI_DB_FILE", os.path.join(os.path.dirname(__file__), "celebrai.db"))
 
 def get_connection():
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
 def init_db():
@@ -161,17 +162,41 @@ def list_events() -> List[Dict[str, Any]]:
 
 def delete_event(event_id: str) -> bool:
     conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM events WHERE id = ?", (event_id,))
-    cursor.execute("DELETE FROM expenses WHERE event_id = ?", (event_id,))
-    cursor.execute("DELETE FROM guests WHERE event_id = ?", (event_id,))
-    cursor.execute("DELETE FROM tasks WHERE event_id = ?", (event_id,))
-    deleted = cursor.rowcount > 0
-    conn.commit()
-    conn.close()
-    return deleted
+    try:
+        cursor = conn.cursor()
 
-# Expenses CRUD
+        cursor.execute(
+            "DELETE FROM events WHERE id = ?",
+            (event_id,)
+        )
+
+        deleted = cursor.rowcount > 0
+
+        if deleted:
+            cursor.execute(
+                "DELETE FROM expenses WHERE event_id = ?",
+                (event_id,)
+            )
+            cursor.execute(
+                "DELETE FROM guests WHERE event_id = ?",
+                (event_id,)
+            )
+            cursor.execute(
+                "DELETE FROM tasks WHERE event_id = ?",
+                (event_id,)
+            )
+
+        conn.commit()
+        return deleted
+
+    except Exception:
+        conn.rollback()
+        raise
+
+    finally:
+        conn.close()
+
+
 def list_expenses(event_id: str) -> List[Dict[str, Any]]:
     conn = get_connection()
     cursor = conn.cursor()
@@ -195,27 +220,45 @@ def add_expense(expense: Dict[str, Any]) -> Dict[str, Any]:
     conn.close()
     return expense
 
+
 def update_expense(expense_id: str, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    allowed_fields = {
+        "category": "category",
+        "item_name": "item_name",
+        "allocated_amount": "allocated_amount",
+        "actual_amount": "actual_amount",
+        "notes": "notes",
+        "paid": "paid",
+    }
+
     conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-    UPDATE expenses SET
-        category = COALESCE(?, category),
-        item_name = COALESCE(?, item_name),
-        allocated_amount = COALESCE(?, allocated_amount),
-        actual_amount = COALESCE(?, actual_amount),
-        notes = COALESCE(?, notes),
-        paid = COALESCE(?, paid)
-    WHERE id = ?
-    """, (updates.get("category"), updates.get("item_name"), updates.get("allocated_amount"),
-          updates.get("actual_amount"), updates.get("notes"),
-          1 if updates.get("paid") is True else (0 if updates.get("paid") is False else None),
-          expense_id))
-    conn.commit()
-    cursor.execute("SELECT * FROM expenses WHERE id = ?", (expense_id,))
-    row = cursor.fetchone()
-    conn.close()
-    return dict(row) if row else None
+    try:
+        cursor = conn.cursor()
+        fields = [field for field in allowed_fields if field in updates]
+
+        if fields:
+            assignments = ", ".join(
+                f"{allowed_fields[field]} = ?" for field in fields
+            )
+            values = [
+                int(updates[field]) if field == "paid" and updates[field] is not None
+                else updates[field]
+                for field in fields
+            ]
+            cursor.execute(
+                f"UPDATE expenses SET {assignments} WHERE id = ?",
+                (*values, expense_id),
+            )
+            conn.commit()
+
+        cursor.execute("SELECT * FROM expenses WHERE id = ?", (expense_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 def delete_expense(expense_id: str) -> bool:
     conn = get_connection()
@@ -251,29 +294,48 @@ def add_guest(guest: Dict[str, Any]) -> Dict[str, Any]:
     conn.close()
     return guest
 
+
 def update_guest(guest_id: str, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    allowed_fields = {
+        "name": "name",
+        "email": "email",
+        "phone": "phone",
+        "category": "category",
+        "rsvp_status": "rsvp_status",
+        "dietary_preferences": "dietary_preferences",
+        "plus_ones": "plus_ones",
+        "invitation_sent": "invitation_sent",
+    }
+
     conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-    UPDATE guests SET
-        name = COALESCE(?, name),
-        email = COALESCE(?, email),
-        phone = COALESCE(?, phone),
-        category = COALESCE(?, category),
-        rsvp_status = COALESCE(?, rsvp_status),
-        dietary_preferences = COALESCE(?, dietary_preferences),
-        plus_ones = COALESCE(?, plus_ones),
-        invitation_sent = COALESCE(?, invitation_sent)
-    WHERE id = ?
-    """, (updates.get("name"), updates.get("email"), updates.get("phone"), updates.get("category"),
-          updates.get("rsvp_status"), updates.get("dietary_preferences"), updates.get("plus_ones"),
-          1 if updates.get("invitation_sent") is True else (0 if updates.get("invitation_sent") is False else None),
-          guest_id))
-    conn.commit()
-    cursor.execute("SELECT * FROM guests WHERE id = ?", (guest_id,))
-    row = cursor.fetchone()
-    conn.close()
-    return dict(row) if row else None
+    try:
+        cursor = conn.cursor()
+        fields = [field for field in allowed_fields if field in updates]
+
+        if fields:
+            assignments = ", ".join(
+                f"{allowed_fields[field]} = ?" for field in fields
+            )
+            values = [
+                int(updates[field])
+                if field == "invitation_sent" and updates[field] is not None
+                else updates[field]
+                for field in fields
+            ]
+            cursor.execute(
+                f"UPDATE guests SET {assignments} WHERE id = ?",
+                (*values, guest_id),
+            )
+            conn.commit()
+
+        cursor.execute("SELECT * FROM guests WHERE id = ?", (guest_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 def delete_guest(guest_id: str) -> bool:
     conn = get_connection()

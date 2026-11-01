@@ -222,6 +222,7 @@ export const AIAssistantPage: React.FC = () => {
         >
           <input
             type="text"
+            aria-label="Message to AI assistant"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask anything or command changes (e.g. 'Change my theme to lavender and white' or 'Reduce decor by ₹1,000')..."
@@ -229,6 +230,7 @@ export const AIAssistantPage: React.FC = () => {
           />
           <button
             type="submit"
+            aria-label="Send message"
             disabled={!input.trim() || loading}
             className="p-2.5 rounded-xl bg-brand-purple hover:bg-brand-purple-dark text-white disabled:opacity-40 transition-all shadow-xs"
           >

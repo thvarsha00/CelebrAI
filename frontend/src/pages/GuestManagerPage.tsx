@@ -248,6 +248,7 @@ export const GuestManagerPage: React.FC = () => {
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
           <input
             type="text"
+            aria-label="Search guests by name, email, or phone"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by guest name, email, or phone..."
@@ -257,6 +258,7 @@ export const GuestManagerPage: React.FC = () => {
 
         <div className="flex items-center space-x-2">
           <select
+            aria-label="Filter guests by category"
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
             className="p-2 rounded-xl border border-brand-lavender dark:border-white/10 bg-brand-warm-white dark:bg-[#141622] text-xs cursor-pointer"
@@ -269,6 +271,7 @@ export const GuestManagerPage: React.FC = () => {
           </select>
 
           <select
+            aria-label="Filter guests by RSVP status"
             value={rsvpFilter}
             onChange={(e) => setRsvpFilter(e.target.value)}
             className="p-2 rounded-xl border border-brand-lavender dark:border-white/10 bg-brand-warm-white dark:bg-[#141622] text-xs cursor-pointer"

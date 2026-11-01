@@ -89,7 +89,7 @@ export const Sidebar: React.FC = () => {
         )}
 
         {/* Grouped Navigation */}
-        <nav className="space-y-4">
+        <nav aria-label="Main navigation" className="space-y-4">
           {groups.map((grp, gIdx) => (
             <div key={gIdx} className="space-y-1">
               <span className="text-[9px] uppercase font-bold tracking-wider text-gray-400 px-3 block">
@@ -101,6 +101,7 @@ export const Sidebar: React.FC = () => {
                   <button
                     key={item.id}
                     onClick={() => setActiveTab(item.id)}
+                    aria-current={isActive ? "page" : undefined}
                     className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-all duration-150 ${
                       isActive
                         ? 'bg-brand-purple text-white font-semibold shadow-xs'

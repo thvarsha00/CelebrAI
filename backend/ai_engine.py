@@ -202,13 +202,13 @@ def parse_freeform_prompt(prompt: str) -> Dict[str, Any]:
     elif "traditional" in prompt_lower:
         data["theme"] = "Traditional Marigold & Brass"
         
-    # Food preference
-    if "vegetarian" in prompt_lower or "veg" in prompt_lower:
-        data["food"] = "Pure Vegetarian gourmet treats, artisanal finger foods & mocktails"
-    elif "non-vegetarian" in prompt_lower or "non veg" in prompt_lower:
+    # Food preference: check specific phrases before broader matches.
+    if re.search(r"\bnon[\s-]*veg(?:etarian)?\b", prompt_lower):
         data["food"] = "Continental & Indian grill with custom beverage pairing"
-    elif "vegan" in prompt_lower:
+    elif re.search(r"\bvegan\b", prompt_lower):
         data["food"] = "Plant-based vegan gourmet cuisine and fresh fruit bar"
+    elif re.search(r"\bvegetarian\b|\bveg\b", prompt_lower):
+        data["food"] = "Pure Vegetarian gourmet treats, artisanal finger foods & mocktails"
 
     # Location extraction
     for city in ["bangalore", "bengaluru", "mumbai", "delhi", "hyderabad", "chennai", "kolkata", "pune", "goa", "jaipur"]:
@@ -491,7 +491,7 @@ def optimize_budget(req: BudgetOptimizationRequest) -> BudgetOptimizationRespons
     E.g. 'Reduce decorations by 1,000 and increase food budget by 1,000'
     """
     instruction = req.user_instruction.lower()
-    items = [b.copy() for b in req.current_allocations]
+    items = [b.model_copy() for b in req.current_allocations]
     categories = {b.category.lower(): b for b in items}
     
     SYNONYMS = {
@@ -524,33 +524,59 @@ def optimize_budget(req: BudgetOptimizationRequest) -> BudgetOptimizationRespons
     if reduce_match and increase_match:
         from_cat_query = reduce_match.group(1).strip()
         from_amt = float(reduce_match.group(2).replace(',', ''))
-        
+
         to_cat_query = increase_match.group(1).strip()
         to_amt = float(increase_match.group(2).replace(',', ''))
-        
+
         matched_from = match_category(from_cat_query)
         matched_to = match_category(to_cat_query)
-                
-        if matched_from and matched_to:
-            # Prevent subtracting more than currently available in matched_from!
-            actual_transfer = min(from_amt, matched_from.allocated_amount)
-            matched_from.allocated_amount -= actual_transfer
-            matched_to.allocated_amount += actual_transfer
-            
-            if actual_transfer < from_amt:
+
+        if not matched_from or not matched_to:
+            explanation_parts.append(
+                "No transfer was made because one or both budget categories "
+                "could not be identified. Please specify the category names."
+            )
+        elif matched_from is matched_to:
+            explanation_parts.append(
+                "No transfer was made because the source and destination "
+                "refer to the same budget category."
+            )
+        else:
+            actual_transfer = min(
+                from_amt,
+                to_amt,
+                max(0.0, float(matched_from.allocated_amount))
+            )
+            actual_transfer = round(actual_transfer, 2)
+
+            if actual_transfer <= 0:
                 explanation_parts.append(
-                    f"Transferred ₹{int(actual_transfer):,} (full remaining balance in '{matched_from.category}') to '{matched_to.category}'. "
-                    f"New {matched_from.category} budget is ₹{int(matched_from.allocated_amount):,}, and new {matched_to.category} budget is ₹{int(matched_to.allocated_amount):,}."
+                    f"No transfer was made because '{matched_from.category}' "
+                    "has no available allocation."
                 )
             else:
-                explanation_parts.append(
-                    f"Successfully transferred ₹{int(actual_transfer):,} from '{matched_from.category}' to '{matched_to.category}'. "
-                    f"New {matched_from.category} budget is ₹{int(matched_from.allocated_amount):,}, and new {matched_to.category} budget is ₹{int(matched_to.allocated_amount):,}."
+                matched_from.allocated_amount = round(
+                    matched_from.allocated_amount - actual_transfer, 2
                 )
-        else:
-            explanation_parts.append(f"Adjusted budget by ₹{int(to_amt):,} according to specified instruction.")
+                matched_to.allocated_amount = round(
+                    matched_to.allocated_amount + actual_transfer, 2
+                )
+
+                explanation_parts.append(
+                    f"Transferred ?{actual_transfer:,.2f} from "
+                    f"'{matched_from.category}' to '{matched_to.category}'. "
+                    f"The requested reduction was ?{from_amt:,.2f} and "
+                    f"the requested increase was ?{to_amt:,.2f}. "
+                    f"New allocations: {matched_from.category} "
+                    f"?{matched_from.allocated_amount:,.2f}; "
+                    f"{matched_to.category} "
+                    f"?{matched_to.allocated_amount:,.2f}."
+                )
     else:
-        explanation_parts.append("Rebalanced budget categories proportionally to maintain optimal vendor and catering allocations.")
+        explanation_parts.append(
+            "No valid reduction-and-increase pair was found. "
+            "Please specify both categories and their amounts."
+        )
 
     total_allocated = round(sum(b.allocated_amount for b in items), 2)
     for b in items:

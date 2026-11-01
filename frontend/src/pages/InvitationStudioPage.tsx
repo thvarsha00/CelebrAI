@@ -15,7 +15,7 @@ import {
   Clock,
   Sliders
 } from 'lucide-react';
-import html2canvas from 'html2canvas';
+
 
 export const InvitationStudioPage: React.FC = () => {
   const { currentEvent, updateCurrentEvent, addToast } = useEventContext();
@@ -51,6 +51,7 @@ export const InvitationStudioPage: React.FC = () => {
     if (!inviteRef.current) return;
     setDownloading(true);
     try {
+      const { default: html2canvas } = await import('html2canvas');
       const canvas = await html2canvas(inviteRef.current, {
         scale: 2.5,
         useCORS: true,

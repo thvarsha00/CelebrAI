@@ -237,7 +237,7 @@ export const LandingPage: React.FC = () => {
                   activePreviewTab === 'palette' ? 'border-brand-purple bg-brand-lavender/30 ring-2 ring-brand-purple/20' : 'border-brand-lavender/60 dark:border-white/5 bg-brand-lavender/20 dark:bg-white/5'
                 }`}>
                   <span className="text-[10px] uppercase font-bold text-brand-purple tracking-wider">Concept & Palette</span>
-                  <h4 className="text-sm font-semibold font-serif mt-1">Pastel Blue & Cloud White</h4>
+                  <p className="text-sm font-semibold font-serif mt-1">Pastel Blue & Cloud White</p>
                   <div className="flex space-x-1.5 mt-3">
                     {["#DCEBFA", "#6750A4", "#FAF9F7", "#F4DCE9", "#20243A"].map((c, i) => (
                       <span key={i} className="w-5 h-5 rounded-full shadow-xs border border-white/50" style={{ backgroundColor: c }} />
@@ -250,7 +250,7 @@ export const LandingPage: React.FC = () => {
                   activePreviewTab === 'budget' ? 'border-brand-purple bg-brand-powder-blue/30 ring-2 ring-brand-purple/20' : 'border-brand-lavender/60 dark:border-white/5 bg-brand-powder-blue/20 dark:bg-white/5'
                 }`}>
                   <span className="text-[10px] uppercase font-bold text-blue-600 tracking-wider">Budget Balance</span>
-                  <h4 className="text-sm font-semibold mt-1">₹15,000 Allocation Cap</h4>
+                  <p className="text-sm font-semibold mt-1">₹15,000 Allocation Cap</p>
                   <div className="w-full bg-gray-200 dark:bg-white/10 h-2 rounded-full mt-3 overflow-hidden">
                     <div className="bg-brand-purple h-2 rounded-full w-[100%]"></div>
                   </div>
@@ -264,7 +264,7 @@ export const LandingPage: React.FC = () => {
                   activePreviewTab === 'guests' ? 'border-brand-purple bg-brand-muted-pink/30 ring-2 ring-brand-purple/20' : 'border-brand-lavender/60 dark:border-white/5 bg-brand-muted-pink/20 dark:bg-white/5'
                 }`}>
                   <span className="text-[10px] uppercase font-bold text-pink-600 tracking-wider">Guest & RSVP</span>
-                  <h4 className="text-sm font-semibold mt-1">30 Confirmed Attendees</h4>
+                  <p className="text-sm font-semibold mt-1">30 Confirmed Attendees</p>
                   <div className="flex items-center space-x-2 text-xs text-gray-500 mt-3">
                     <span className="px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-medium text-[11px]">24 Yes</span>
                     <span className="px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 font-medium text-[11px]">4 Pending</span>
@@ -371,7 +371,7 @@ export const LandingPage: React.FC = () => {
               <div className="w-9 h-9 rounded-full bg-brand-purple text-white font-serif font-bold text-sm flex items-center justify-center mx-auto mb-4">
                 1
               </div>
-              <h4 className="font-serif text-base font-semibold">Express Your Vision</h4>
+              <h3 className="font-serif text-base font-semibold">Express Your Vision</h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
                 Describe your dream event in simple English or utilize our guided wizard with guest count, budget, and location.
               </p>
@@ -381,7 +381,7 @@ export const LandingPage: React.FC = () => {
               <div className="w-9 h-9 rounded-full bg-brand-purple text-white font-serif font-bold text-sm flex items-center justify-center mx-auto mb-4">
                 2
               </div>
-              <h4 className="font-serif text-base font-semibold">AI Generates 14 Structured Modules</h4>
+              <h3 className="font-serif text-base font-semibold">AI Generates 14 Structured Modules</h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
                 Receive customized themes, decor concepts, menu courses, photography shot lists, and a balanced budget breakdown.
               </p>
@@ -391,7 +391,7 @@ export const LandingPage: React.FC = () => {
               <div className="w-9 h-9 rounded-full bg-brand-purple text-white font-serif font-bold text-sm flex items-center justify-center mx-auto mb-4">
                 3
               </div>
-              <h4 className="font-serif text-base font-semibold">Fine-Tune & Host Effortlessly</h4>
+              <h3 className="font-serif text-base font-semibold">Fine-Tune & Host Effortlessly</h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
                 Download interactive invitations, manage RSVPs, check off items, and command the AI assistant to adjust live parameters.
               </p>
@@ -432,7 +432,7 @@ export const LandingPage: React.FC = () => {
                   </p>
                 </div>
                 <div className="pt-4 mt-4 border-t border-gray-100 dark:border-white/5">
-                  <h5 className="font-semibold text-xs">{t.name}</h5>
+                  <h3 className="font-semibold text-xs">{t.name}</h3>
                   <span className="text-[11px] text-gray-400">{t.role}</span>
                 </div>
               </div>

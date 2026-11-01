@@ -156,6 +156,7 @@ export const ShoppingChecklistPage: React.FC = () => {
         <Plus className="w-4 h-4 text-brand-purple flex-shrink-0" />
         <input
           type="text"
+          aria-label="New shopping item name"
           value={quickName}
           onChange={(e) => setQuickName(e.target.value)}
           placeholder="Quick add supply (e.g. Extra Fairy Light String, Helium Balloons)..."
@@ -165,6 +166,7 @@ export const ShoppingChecklistPage: React.FC = () => {
           <span className="text-xs text-gray-400">₹</span>
           <input
             type="number"
+            aria-label="Estimated cost of shopping item"
             min={0}
             value={quickPrice}
             onChange={(e) => setQuickPrice(e.target.value === '' ? '' : Number(e.target.value))}

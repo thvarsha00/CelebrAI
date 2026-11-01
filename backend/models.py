@@ -1,5 +1,5 @@
-from typing import List, Dict, Optional, Any
-from pydantic import BaseModel, Field
+from typing import List, Dict, Optional, Any, Literal
+from pydantic import BaseModel, Field, ConfigDict, model_validator
 
 # Event Generation Input
 class EventGenerateRequest(BaseModel):
@@ -109,12 +109,12 @@ class ChatMessage(BaseModel):
 
 class EventChatRequest(BaseModel):
     event_context: Optional[Dict[str, Any]] = None
-    conversation_history: List[ChatMessage] = []
+    conversation_history: List[ChatMessage] = Field(default_factory=list)
     message: str
 
 class EventChatResponse(BaseModel):
     response: str
-    suggested_actions: Optional[List[str]] = []
+    suggested_actions: Optional[List[str]] = Field(default_factory=list)
     updated_event_patch: Optional[Dict[str, Any]] = None # optional live patch applied to event
 
 # Guest
@@ -140,6 +140,54 @@ class Expense(BaseModel):
     actual_amount: float
     notes: Optional[str] = None
     paid: bool = False
+
+
+# Partial update validation
+class ExpenseUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    category: Optional[str] = Field(default=None, min_length=1, max_length=80)
+    item_name: Optional[str] = Field(default=None, min_length=1, max_length=150)
+    allocated_amount: Optional[float] = Field(default=None, ge=0)
+    actual_amount: Optional[float] = Field(default=None, ge=0)
+    notes: Optional[str] = Field(default=None, max_length=2000)
+    paid: Optional[bool] = None
+
+    @model_validator(mode="after")
+    def validate_required_values(self):
+        required_when_provided = (
+            "category", "item_name", "allocated_amount",
+            "actual_amount", "paid"
+        )
+        for field in required_when_provided:
+            if field in self.model_fields_set and getattr(self, field) is None:
+                raise ValueError(f"{field} cannot be null")
+        return self
+
+
+class GuestUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: Optional[str] = Field(default=None, min_length=1, max_length=150)
+    email: Optional[str] = Field(default=None, max_length=254)
+    phone: Optional[str] = Field(default=None, max_length=40)
+    category: Optional[str] = Field(default=None, min_length=1, max_length=80)
+    rsvp_status: Optional[Literal["Pending", "Confirmed", "Declined"]] = None
+    dietary_preferences: Optional[str] = Field(default=None, max_length=500)
+    plus_ones: Optional[int] = Field(default=None, ge=0)
+    invitation_sent: Optional[bool] = None
+
+    @model_validator(mode="after")
+    def validate_required_values(self):
+        required_when_provided = (
+            "name", "category", "rsvp_status",
+            "plus_ones", "invitation_sent"
+        )
+        for field in required_when_provided:
+            if field in self.model_fields_set and getattr(self, field) is None:
+                raise ValueError(f"{field} cannot be null")
+        return self
+
 
 # Last Minute Emergency Matrix
 class LastMinuteRequest(BaseModel):

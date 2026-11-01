@@ -171,7 +171,7 @@ export const Navbar: React.FC = () => {
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="md:hidden p-2 rounded-xl text-brand-navy dark:text-brand-warm-white hover:bg-brand-lavender/50 transition-colors"
-                aria-label="Open Navigation Menu"
+                aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
               >
                 {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
@@ -182,7 +182,7 @@ export const Navbar: React.FC = () => {
 
       {/* Mobile Drawer Sheet */}
       {mobileMenuOpen && !isLanding && (
-        <div className="md:hidden fixed inset-0 top-16 z-50 bg-black/40 backdrop-blur-sm animate-fade-in">
+        <div id="mobile-navigation" className="md:hidden fixed inset-0 top-16 z-50 bg-black/40 backdrop-blur-sm animate-fade-in">
           <div className="bg-white dark:bg-[#171926] p-5 h-full overflow-y-auto max-w-xs border-r border-brand-lavender dark:border-white/10 shadow-2xl">
             {/* Active event in mobile */}
             {currentEvent && (
