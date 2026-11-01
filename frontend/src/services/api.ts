@@ -1,15 +1,37 @@
-import { EventPlan, BudgetOptimizationResponse, ChatMessage, LastMinutePlan, Guest, Expense } from '../types';
 
-const API_BASE = '/api';
+import {
+  EventPlan,
+  BudgetOptimizationResponse,
+  ChatMessage,
+  LastMinutePlan,
+  Guest,
+  Expense,
+} from '../types';
+
+// Local development uses Vite's proxy.
+// Production uses the Vercel environment variable.
+const API_BASE = (
+  import.meta.env.VITE_API_BASE_URL || '/api'
+).replace(/\/+$/, '');
 
 export const api = {
   async getHealth() {
     try {
       const res = await fetch(`${API_BASE}/health`);
-      if (!res.ok) throw new Error('Health check failed');
+
+      if (!res.ok) {
+        throw new Error('Health check failed');
+      }
+
       return await res.json();
     } catch {
-      return { status: 'offline', gemini_api_configured: false };
+      return {
+        status: 'offline',
+        ai_providers: {
+          groq_configured: false,
+          grok_configured: false,
+        },
+      };
     }
   },
 
@@ -30,40 +52,66 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
     });
+
     if (!res.ok) {
       throw new Error(`Failed to generate event plan: ${res.statusText}`);
     }
+
     return await res.json();
   },
 
   async getEvents(): Promise<EventPlan[]> {
     const res = await fetch(`${API_BASE}/events`);
-    if (!res.ok) throw new Error('Failed to fetch events');
+
+    if (!res.ok) {
+      throw new Error('Failed to fetch events');
+    }
+
     return await res.json();
   },
 
   async getEvent(id: string): Promise<EventPlan> {
     const res = await fetch(`${API_BASE}/events/${id}`);
-    if (!res.ok) throw new Error('Event not found');
+
+    if (!res.ok) {
+      throw new Error('Event not found');
+    }
+
     return await res.json();
   },
 
-  async updateEvent(id: string, updates: Partial<EventPlan>): Promise<EventPlan> {
+  async updateEvent(
+    id: string,
+    updates: Partial<EventPlan>
+  ): Promise<EventPlan> {
     const res = await fetch(`${API_BASE}/events/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),
     });
-    if (!res.ok) throw new Error('Failed to update event');
+
+    if (!res.ok) {
+      throw new Error('Failed to update event');
+    }
+
     return await res.json();
   },
 
   async deleteEvent(id: string): Promise<void> {
-    const res = await fetch(`${API_BASE}/events/${id}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error('Failed to delete event');
+    const res = await fetch(`${API_BASE}/events/${id}`, {
+      method: 'DELETE',
+    });
+
+    if (!res.ok) {
+      throw new Error('Failed to delete event');
+    }
   },
 
-  async chatWithAI(eventContext: any, history: ChatMessage[], message: string): Promise<{
+  async chatWithAI(
+    eventContext: any,
+    history: ChatMessage[],
+    message: string
+  ): Promise<{
     response: string;
     suggested_actions?: string[];
     updated_event_patch?: any;
@@ -73,15 +121,26 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         event_context: eventContext,
-        conversation_history: history.map(h => ({ role: h.role, content: h.content })),
+        conversation_history: history.map((h) => ({
+          role: h.role,
+          content: h.content,
+        })),
         message,
       }),
     });
-    if (!res.ok) throw new Error('AI chat failed');
+
+    if (!res.ok) {
+      throw new Error('AI chat failed');
+    }
+
     return await res.json();
   },
 
-  async optimizeBudget(current_budget: number, current_allocations: any[], user_instruction: string): Promise<BudgetOptimizationResponse> {
+  async optimizeBudget(
+    current_budget: number,
+    current_allocations: any[],
+    user_instruction: string
+  ): Promise<BudgetOptimizationResponse> {
     const res = await fetch(`${API_BASE}/ai/optimise-budget`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -91,7 +150,11 @@ export const api = {
         user_instruction,
       }),
     });
-    if (!res.ok) throw new Error('Budget optimization failed');
+
+    if (!res.ok) {
+      throw new Error('Budget optimization failed');
+    }
+
     return await res.json();
   },
 
@@ -107,14 +170,23 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
     });
-    if (!res.ok) throw new Error('Failed to generate last-minute rescue');
+
+    if (!res.ok) {
+      throw new Error('Failed to generate last-minute rescue');
+    }
+
     return await res.json();
   },
 
-  // Expenses
+  // EXPENSES
+
   async getExpenses(eventId: string): Promise<Expense[]> {
-    const res = await fetch(`${API_BASE}/expenses?event_id=${eventId}`);
+    const res = await fetch(
+      `${API_BASE}/expenses?event_id=${encodeURIComponent(eventId)}`
+    );
+
     if (!res.ok) return [];
+
     return await res.json();
   },
 
@@ -124,26 +196,50 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(expense),
     });
+
+    if (!res.ok) {
+      throw new Error('Failed to add expense');
+    }
+
     return await res.json();
   },
 
-  async updateExpense(id: string, updates: Partial<Expense>): Promise<Expense> {
+  async updateExpense(
+    id: string,
+    updates: Partial<Expense>
+  ): Promise<Expense> {
     const res = await fetch(`${API_BASE}/expenses/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),
     });
+
+    if (!res.ok) {
+      throw new Error('Failed to update expense');
+    }
+
     return await res.json();
   },
 
   async deleteExpense(id: string): Promise<void> {
-    await fetch(`${API_BASE}/expenses/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${API_BASE}/expenses/${id}`, {
+      method: 'DELETE',
+    });
+
+    if (!res.ok) {
+      throw new Error('Failed to delete expense');
+    }
   },
 
-  // Guests
+  // GUESTS
+
   async getGuests(eventId: string): Promise<Guest[]> {
-    const res = await fetch(`${API_BASE}/guests?event_id=${eventId}`);
+    const res = await fetch(
+      `${API_BASE}/guests?event_id=${encodeURIComponent(eventId)}`
+    );
+
     if (!res.ok) return [];
+
     return await res.json();
   },
 
@@ -153,19 +249,38 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(guest),
     });
+
+    if (!res.ok) {
+      throw new Error('Failed to add guest');
+    }
+
     return await res.json();
   },
 
-  async updateGuest(id: string, updates: Partial<Guest>): Promise<Guest> {
+  async updateGuest(
+    id: string,
+    updates: Partial<Guest>
+  ): Promise<Guest> {
     const res = await fetch(`${API_BASE}/guests/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),
     });
+
+    if (!res.ok) {
+      throw new Error('Failed to update guest');
+    }
+
     return await res.json();
   },
 
   async deleteGuest(id: string): Promise<void> {
-    await fetch(`${API_BASE}/guests/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${API_BASE}/guests/${id}`, {
+      method: 'DELETE',
+    });
+
+    if (!res.ok) {
+      throw new Error('Failed to delete guest');
+    }
   },
 };
