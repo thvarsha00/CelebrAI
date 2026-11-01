@@ -1,0 +1,111 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --brand-lavender: #EAE6FF;
+    --brand-purple: #6750A4;
+    --brand-purple-dark: #4F378B;
+    --brand-navy: #20243A;
+    --brand-warm-white: #FAF9F7;
+    --brand-soft-grey: #F1F1F5;
+    --brand-powder-blue: #DCEBFA;
+    --brand-muted-pink: #F4DCE9;
+  }
+
+  body {
+    @apply bg-[#FAF9F7] text-[#20243A] selection:bg-[#EAE6FF] selection:text-[#6750A4] font-sans antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  .dark body {
+    @apply bg-[#131520] text-[#F1F1F5] selection:bg-[#6750A4] selection:text-[#FAF9F7];
+  }
+
+  h1, h2, h3, .font-serif {
+    font-family: 'Playfair Display', Georgia, serif;
+    letter-spacing: -0.015em;
+  }
+}
+
+/* Linear & Stripe Style Glass Panels */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(234, 230, 255, 0.7);
+}
+
+.dark .glass-panel {
+  background: rgba(24, 27, 41, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Subtle Cards & Elevation */
+.saas-card {
+  background: #FFFFFF;
+  border: 1px solid rgba(234, 230, 255, 0.8);
+  box-shadow: 0 1px 3px rgba(32, 36, 58, 0.02), 0 4px 16px -2px rgba(103, 80, 164, 0.04);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.saas-card:hover {
+  border-color: rgba(103, 80, 164, 0.3);
+  box-shadow: 0 4px 12px rgba(32, 36, 58, 0.04), 0 12px 28px -4px rgba(103, 80, 164, 0.08);
+}
+
+.dark .saas-card {
+  background: #1B1E2E;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.35);
+}
+
+.dark .saas-card:hover {
+  border-color: rgba(103, 80, 164, 0.45);
+  box-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.5);
+}
+
+/* Minimalist Scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D8D4EE;
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #2D334A;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6750A4;
+}
+
+/* Focus Rings */
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(103, 80, 164, 0.2);
+}
+
+/* Subtle pastel background glows */
+.bg-pastel-mesh {
+  background: radial-gradient(at 0% 0%, rgba(234, 230, 255, 0.6) 0px, transparent 50%),
+              radial-gradient(at 100% 0%, rgba(220, 235, 250, 0.5) 0px, transparent 50%),
+              radial-gradient(at 50% 100%, rgba(244, 220, 233, 0.4) 0px, transparent 50%);
+}
+
+.dark .bg-pastel-mesh {
+  background: radial-gradient(at 0% 0%, rgba(103, 80, 164, 0.15) 0px, transparent 50%),
+              radial-gradient(at 100% 0%, rgba(32, 36, 58, 0.5) 0px, transparent 50%),
+              radial-gradient(at 50% 100%, rgba(27, 30, 46, 0.8) 0px, transparent 50%);
+}
