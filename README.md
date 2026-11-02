@@ -101,36 +101,3 @@ npm install
 npm run dev
 ```
 *Frontend interface is live at `http://127.0.0.1:5173/`.*
-
----
-
-## 🎤 2-Minute Presentation Script for Judges
-
-> **(0:00 - 0:25) The Problem & Vision**  
-> *"Judges, planning a celebration should be exciting, but for most people, it's an overwhelming mess of fragmented spreadsheets, vendor misquotes, and last-minute panic. That's why we built **CelebrAI**—an elite AI celebration and event planning platform designed around one philosophy: 'From imagination to celebration, without the planning stress.' We built CelebrAI not as a student prototype, but as a Stripe/Linear-grade SaaS product ready for real-world deployment."*
-
-> **(0:25 - 0:55) Standout Innovation 1: One-Prompt Event Creation**  
-> *"Watch how CelebrAI works. Instead of filling 40 form fields, a user simply types: 'Plan a beautiful birthday celebration for 30 people with a pastel blue aesthetic, vegetarian food, elegant decorations and a total budget of ₹15,000.' In seconds, our backend—powered by Google Gemini and validated by Pydantic—generates a complete 14-section master plan: from concept and color harmony to photography shot lists, caterer menus, and itemized budget allocations."*
-
-> **(0:55 - 1:25) Standout Innovation 2 & 3: Intelligent Budget Optimizer & Context Assistant**  
-> *"When budget realities hit, CelebrAI shines. You can literally say: 'Reduce decorations by ₹1,000 and increase the food budget by ₹1,000.' Our AI automatically calculates the math, updates the database, warns if limits are breached, and visualizes the updated proportions with Recharts. Furthermore, our conversational AI copilot has real-time context on your active event and can apply live theme and schedule modifications."*
-
-> **(1:25 - 1:45) Standout Innovation 4 & 5: Invitation Studio & 24h Emergency Rescue**  
-> *"Need cards? Our Invitation Studio lets you customize typography and palettes with live canvas preview and instant high-res PNG export. And if you're down to the wire, our 24-Hour Emergency Rescue matrix acts as an emergency triage: showing you the 5 critical tasks to complete, which time-wasting distractions to skip, and what ready-made items to buy."*
-
-> **(1:45 - 2:00) Closing & Value**  
-> *"CelebrAI combines beauty, precision engineering, and genuine AI intelligence to make every celebration extraordinary. Thank you!"*
-
----
-
-## 🏆 Hackathon Evaluation Checklist
-
-| Evaluation Criterion | Score (1-10) | CelebrAI Implementation Details |
-|---|---|---|
-| **Problem Relevance** | 10/10 | Solves real pain points in milestone event planning (budget creep, vendor coordination, last-minute panic). |
-| **Innovation** | 10/10 | One-Prompt parsing, 24h Emergency Matrix, verbal budget optimization with zero creep enforcement. |
-| **AI Integration** | 10/10 | Google Gemini API + Pydantic validation + contextual conversational live event modification. |
-| **UI/UX Design** | 10/10 | Linear/Stripe aesthetic, custom pastel palette, Inter + Playfair typography, dark/light modes, zero clutter. |
-| **Functionality** | 10/10 | 12 interactive functional modules—all buttons, forms, exports, and budget calculations are fully operational. |
-| **Technical Quality** | 10/10 | Clean separation of concerns, TypeScript strict type safety, FastAPI REST endpoints, SQLite persistence. |
-| **Real-world Usefulness**| 10/10 | Usable by individuals, couples, event planners, and corporate organizers right now. |
